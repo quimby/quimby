@@ -47,7 +47,7 @@ public:
 			return true;
 		if (y > v.y)
 			return false;
-		else if	(y < v.y)
+		else if (y < v.y)
 			return true;
 		if (z >= v.z)
 			return false;
@@ -92,6 +92,17 @@ public:
 		return *this;
 	}
 
+	Vector3<T> operator %(const T &f) const {
+		return Vector3(x % f, y % f, z % f);
+	}
+
+	Vector3<T> &operator %=(const T &f) {
+		x %= f;
+		y %= f;
+		z %= f;
+		return *this;
+	}
+
 	Vector3<T> &operator *=(const T &f) {
 		x *= f;
 		y *= f;
@@ -123,23 +134,49 @@ public:
 	T length() {
 		return std::sqrt(x * x + y * y + z * z);
 	}
-//
-//	bool operator <(const Vector3<T> &p) const {
-//		if (x < p.x)
-//			return true;
-//		else if (x > p.x)
-//			return false;
-//		if (y < p.y)
-//			return true;
-//		else if (y > p.y)
-//			return false;
-//		if (z < p.z)
-//			return true;
-//		else
-//			return false;
-//	}
+	//
+	//	bool operator <(const Vector3<T> &p) const {
+	//		if (x < p.x)
+	//			return true;
+	//		else if (x > p.x)
+	//			return false;
+	//		if (y < p.y)
+	//			return true;
+	//		else if (y > p.y)
+	//			return false;
+	//		if (z < p.z)
+	//			return true;
+	//		else
+	//			return false;
+	//	}
 
 };
+
+template<>
+inline Vector3<float> Vector3<float>::operator %(const float &f) const {
+	return Vector3<float> (fmod(x, f), fmod(y, f), fmod(z, f));
+}
+
+template<>
+inline Vector3<float> &Vector3<float>::operator %=(const float &f) {
+	x = fmod(x, f);
+	y = fmod(y, f);
+	z = fmod(z, f);
+	return *this;
+}
+
+template<>
+inline Vector3<double> Vector3<double>::operator %(const double &f) const {
+	return Vector3<double> (fmod(x, f), fmod(y, f), fmod(z, f));
+}
+
+template<>
+inline Vector3<double> &Vector3<double>::operator %=(const double &f) {
+	x = fmod(x, f);
+	y = fmod(y, f);
+	z = fmod(z, f);
+	return *this;
+}
 
 #if 0
 template<typename T>
@@ -201,13 +238,13 @@ Vector3<T> interpolate(const Vector3<T> &a, const Vector3<T> &b, const Vector3<
 }
 #endif
 template<typename T>
-std::ostream &operator <<(std::ostream &out, const Vector3<T> &v) {
+inline std::ostream &operator <<(std::ostream &out, const Vector3<T> &v) {
 	out << v.x << " " << v.y << " " << v.z;
 	return out;
 }
 
 template<typename T>
-std::istream &operator >>(std::istream &in, Vector3<T> &v) {
+inline std::istream &operator >>(std::istream &in, Vector3<T> &v) {
 	in >> v.x >> v.y >> v.z;
 	return in;
 }
