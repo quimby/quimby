@@ -10,6 +10,7 @@
 #include "gadget/PagedGrid.hpp"
 #include "gadget/SmoothParticle.hpp"
 #include "gadget/GadgetFile.hpp"
+#include "gadget/Vector3.hpp"
 
 #include <ctime>
 #include <limits>
@@ -77,6 +78,7 @@ size_t dround(double d) {
 }
 
 int paged_grid(Arguments &arguments) {
+
 	float pageSize = arguments.getInt("-pageSize", 100);
 	std::cout << "PageSize:       " << pageSize << " kpc " << std::endl;
 
@@ -95,9 +97,10 @@ int paged_grid(Arguments &arguments) {
 	std::cout << "h:              " << h << std::endl;
 
 	BinaryPageIO<Vector3f> io;
-	io.prefix = arguments.getString("-prefix", "paged_grid");
-	io.forceDump = true;
-	std::cout << "Output Prefix:  " << io.prefix << std::endl;
+	std::string prefix = arguments.getString("-prefix", "paged_grid");
+	io.setPrefix(prefix);
+	io.setForceDump(true);
+	std::cout << "Output Prefix:  " << prefix << std::endl;
 
 	Vector3f lowerLimit, upperLimit;
 	lowerLimit.x = floor(arguments.getFloat("-lx", 0.0) / res);
@@ -119,17 +122,21 @@ int paged_grid(Arguments &arguments) {
 	std::cout << "Memory:         " << memory << " MiB -> " << pageCount
 			<< " pages" << std::endl;
 
-	io.defaultValue = Vector3f(0.0f);
+	io.setDefaultValue(Vector3f(0.0f));
+	io.setOverwrite(true);
 
 	size_t fileSizeKpc = arguments.getFloat("-fileSize", 10000);
-	io.fileSize = fileSizeKpc / pageSize;
-	size_t pages_per_file = io.fileSize * io.fileSize * io.fileSize;
+	size_t fileSize = fileSizeKpc / res;
+	io.setElemetsPerFile(fileSize);
+	size_t pages_per_file = fileSize * fileSize * fileSize;
 	std::cout << "FileSize:       " << fileSizeKpc << " kpc "
 			<< (pages_per_file * page_byte_size / 1024 / 1024) << " MiB -> "
 			<< pages_per_file << " pages" << std::endl;
 
 	LeastAccessPagingStrategy<Vector3f> strategy;
-	PagedGrid<Vector3f> grid(size / res, pageLength);
+	PagedGrid<Vector3f> grid;
+	grid.setSize(size / res);
+	grid.setPageSize(pageLength);
 	grid.setStrategy(&strategy);
 	grid.setIO(&io);
 	grid.setPageCount(pageCount);
@@ -182,7 +189,7 @@ int paged_grid(Arguments &arguments) {
 
 		time_t start = std::time(0);
 		time_t last = std::time(0);
-		size3_t totalMin(size_t(-1)), totalMax(size_t(0));
+		index3_t totalMin(size_t(-1)), totalMax(size_t(0));
 		float avgSL = 0.0;
 		size_t lastN = 0;
 		for (int iP = skip; iP < pn; iP++) {
@@ -190,11 +197,11 @@ int paged_grid(Arguments &arguments) {
 			if ((now - last >= 1) && verbose && iP) {
 				time_t elapsed = now - last;
 				size_t n = iP - lastN;
-				float pps = (float) n / std::min((time_t)1, elapsed);
+				float pps = (float) n / std::min((time_t) 1, elapsed);
 				std::cout << "\r  " << iP << ": " << (iP * 100) / pn
 						<< "%, pages: " << grid.getActivePageCount() << " ("
-						<< io.loadedPages << " loaded), throughput: " << pps
-						<< "               \r";
+						<< io.getLoadedPages() << " loaded), throughput: "
+						<< pps << "               \r";
 				std::cout.flush();
 
 				last = now;
@@ -217,7 +224,7 @@ int paged_grid(Arguments &arguments) {
 
 			v.cellLength = res;
 
-			size3_t lower, upper;
+			index3_t lower, upper;
 			lower.x = std::max(lowerLimit.x, std::floor((v.particle.position.x
 					- v.particle.smoothingLength * 2) / res));
 			lower.y = std::max(lowerLimit.y, std::floor((v.particle.position.y
@@ -256,7 +263,7 @@ int paged_grid(Arguments &arguments) {
 		std::cout << "  min: " << totalMin << " kpc" << std::endl;
 		std::cout << "  max: " << totalMax << " kpc" << std::endl;
 		std::cout << "  pages: " << grid.getActivePageCount() << " ("
-				<< io.loadedPages << " loaded)" << std::endl;
+				<< io.getLoadedPages() << " loaded)" << std::endl;
 
 	}
 
