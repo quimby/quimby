@@ -84,26 +84,24 @@ public:
 	}
 };
 
-void SampledMagneticField::init(const Vector3f &originKpc, float sizeKpc,
-		Database &db) {
+void SampledMagneticField::init(const Vector3f &originKpc, float sizeKpc) {
 	_originKpc = originKpc;
 	_sizeKpc = sizeKpc;
 	_stepsizeKpc = sizeKpc / (_samples-1);
 	_grid.create(_samples, _sizeKpc);
 	_grid.reset(Vector3f(0, 0, 0));
+}
 
+void SampledMagneticField::init(const Vector3f &originKpc, float sizeKpc,
+		Database &db) {
+	init(originKpc, sizeKpc);
 	ApplyVisitor v(this);
 	db.accept(originKpc, originKpc + Vector3f(sizeKpc, sizeKpc, sizeKpc), v);
 }
 
 void SampledMagneticField::init(const Vector3f &originKpc, float sizeKpc,
 		const std::vector<SmoothParticle> &particles) {
-	_originKpc = originKpc;
-	_sizeKpc = sizeKpc;
-	_stepsizeKpc = sizeKpc / (_samples-1);
-	_grid.create(_samples, _sizeKpc);
-	_grid.reset(Vector3f(0, 0, 0));
-
+	init(originKpc, sizeKpc);
 	size_t s = particles.size();
 	for (size_t i = 0; i < s; i++) {
 		sampleParticle(particles[i]);
