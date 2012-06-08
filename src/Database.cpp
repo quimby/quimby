@@ -36,7 +36,7 @@ FileDatabase::FileDatabase() :
 		count(0) {
 }
 
-void FileDatabase::open(const std::string &filename) {
+bool FileDatabase::open(const std::string &filename) {
 	this->filename = filename;
 	std::ifstream in(filename.c_str(), std::ios::binary);
 	in.read((char*) &count, sizeof(count));
@@ -52,6 +52,8 @@ void FileDatabase::open(const std::string &filename) {
 		this->filename.clear();
 		count = 0;
 	}
+
+	return in.good();
 }
 
 Vector3f FileDatabase::getLowerBounds() {
@@ -65,7 +67,7 @@ size_t FileDatabase::getCount() {
 	return count;
 }
 
-void FileDatabase::accept(const Vector3f &lower, const Vector3f &upper,
+void FileDatabase::accept(const Vector3f &l, const Vector3f &u,
 		Database::Visitor &visitor) {
 	if (count == 0)
 		return;
@@ -75,12 +77,13 @@ void FileDatabase::accept(const Vector3f &lower, const Vector3f &upper,
 	if (!in)
 		return;
 
-	AABB<float> box(lower, upper);
+	AABB<float> box(l, u);
 	Vector3f blockSize = (upper - lower) / blocks_per_axis;
 	Vector3f box_lower, box_upper;
 
+	visitor.begin();
+
 	for (size_t iX = 0; iX < blocks_per_axis; iX++) {
-		std::cout << iX << "%" << std::endl;
 		box_lower.x = lower.x + iX * blockSize.x;
 		box_upper.x = box_lower.x + blockSize.x;
 		for (size_t iY = 0; iY < blocks_per_axis; iY++) {
@@ -97,7 +100,6 @@ void FileDatabase::accept(const Vector3f &lower, const Vector3f &upper,
 
 				if (!block_box.intersects(box))
 					continue;
-
 				in.seekg(block.start * sizeof(SmoothParticle) + data_pos,
 						std::ios::beg);
 
@@ -116,6 +118,8 @@ void FileDatabase::accept(const Vector3f &lower, const Vector3f &upper,
 			}
 		}
 	}
+
+	visitor.end();
 }
 
 class XSorter {
